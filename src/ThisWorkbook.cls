@@ -42,8 +42,13 @@ End Sub
 
 'ワークブック クローズ時に実行
 Private Sub Workbook_BeforeClose(Cancel As Boolean)
+
   If ENABLE_WORKBOOK_CLOSE = True Then
-    Call saveModule("." & Application.PathSeparator & FILENAME_LIBLIST)
+    Dim cheak As Long
+    check = MsgBox("VBEにおける編集結果を保存しますか?", vbYesNo)
+    If cheak = vbYes Then
+        Call saveModule("." & Application.PathSeparator & FILENAME_LIBLIST)
+    End If
   End If
     
   Call clearShortKey
@@ -190,8 +195,6 @@ Private Function loadModule(ByVal pathConf As String) As String
   loadModule = msgError
 
 End Function
-
-
 
 '----------------------------- Functions / Subs ---------------
 
@@ -461,7 +464,6 @@ End Function
 Private Sub array2list(ByVal arrayInput As Variant, ByVal pathFile As String)
     
   '1. 現状のリストファイルの削除
-  MsgBox pathFile
   pathFile = absPath(pathFile)
   
   With CreateObject("Scripting.FileSystemObject")
