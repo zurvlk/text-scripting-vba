@@ -44,9 +44,9 @@ End Sub
 Private Sub Workbook_BeforeClose(Cancel As Boolean)
 
   If ENABLE_WORKBOOK_CLOSE = True Then
-    Dim cheak As Long
+    Dim check As cdLong
     check = MsgBox("VBEにおける編集結果を保存しますか?", vbYesNo)
-    If cheak = vbYes Then
+    If check = vbYes Then
         Call saveModule("." & Application.PathSeparator & FILENAME_LIBLIST)
     End If
   End If
