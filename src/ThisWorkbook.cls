@@ -1,9 +1,11 @@
-' Text Scripting on VBA v1.0.0
-' last update: 2013-01-03
-' HATANO Hirokazu
-'
+' Text Scripting on VBA v1.0.1 mod
+' last update: 2018-05-29
+' Original: HATANO Hirokazu
+
+' Postscript: Zhuravlik
+
 ' Detail: http://rsh.csh.sh/text-scripting-vba/
-'  See Also: http://d.hatena.ne.jp/language_and_engineering/20090731/p1
+' See Also: http://d.hatena.ne.jp/language_and_engineering/20090731/p1
 
 Option Explicit
 
@@ -15,8 +17,11 @@ Const FILENAME_LIBLIST As String = "libdef.txt" 'ライブラリリストのフ�
 Const FILENAME_EXPORT As String = "ThisWorkbook-sjis.cls" 'エクスポート clsファイル名
 
 'ワークブック オープン時に実行する(True) / しない(False)
+'Const ENABLE_WORKBOOK_OPEN As Boolean = True
 Const ENABLE_WORKBOOK_OPEN As Boolean = True
-'Const ENABLE_WORKBOOK_OPEN As Boolean = False
+
+'ワークブッククローズ時にVBE側の設定を元ファイルに適用する(True) / しない(False)
+Const ENABLE_WORKBOOK_CLOSE As Boolean = True
 
 'ショートカットキー
 Const SHORTKEY_RELOAD As String = "r" 'ctrl + r
@@ -32,12 +37,17 @@ Private Sub Workbook_Open()
   
   Call setShortKey
   Call reloadModule
- End Sub
+
+End Sub
 
 'ワークブック クローズ時に実行
 Private Sub Workbook_BeforeClose(Cancel As Boolean)
+  If ENABLE_WORKBOOK_CLOSE = True Then
+    Call saveModule("." & Application.PathSeparator & FILENAME_LIBLIST)
+  End If
+    
   Call clearShortKey
- End Sub
+End Sub
 
 
 
@@ -54,13 +64,63 @@ Public Sub reloadModule()
   End If
 End Sub
 
+Public Sub saveChanges()
+    Call saveModule("." & Application.PathSeparator & FILENAME_LIBLIST)
+End Sub
 
 Public Sub exportThisWorkbook()
   'ThisWorkbook 手動export用 Public関数
   Call exportModule("ThisWorkbook", FILENAME_EXPORT)
 End Sub
 
+'--------------------------------------------
+Private Sub saveModule(ByVal pathConf As String)
+  '要参照: Microsoft Visual Basic for Application Extensibilly 5.3
+  Dim module As VBComponent
+  Dim moduleList As VBComponents
+  'モジュール一覧取得
+  Set moduleList = ThisWorkbook.VBProject.VBComponents
+  
+  Dim arrayModule() As String
+  Dim extension As String
+  Dim sFilePath
+  Dim i As Integer: i = 0
+  
 
+  For Each module In moduleList
+    '// クラス
+    If (module.Type = vbext_ct_ClassModule) Then
+        extension = "cls"
+    '// フォーム
+    ElseIf (module.Type = vbext_ct_MSForm) Then
+        '// .frxも一緒にエクスポートされる
+        extension = "frm"
+    '// 標準モジュール
+    ElseIf (module.Type = vbext_ct_StdModule) Then
+        extension = "bas"
+    '// その他
+    Else
+        '// エクスポート対象外のため次ループへ
+        GoTo continue
+    End If
+        
+    '// エクスポート実施
+    sFilePath = module.Name & "." & extension
+    sFilePath = absPath(sFilePath)
+    Call module.Export(sFilePath)
+    
+    i = i + 1
+    ReDim Preserve arrayModule(i)
+    
+    arrayModule(i - 1) = "./" & module.Name & "." & extension
+    
+continue:
+  Next
+  
+  
+  '書き出し
+  Call array2list(arrayModule, pathConf)
+End Sub
 
 
 '----------------------------- main Subs/Functions ---------------
@@ -141,8 +201,8 @@ Private Sub exportModule(ByVal nameModule As String, ByVal nameFile As String)
   For Each component In ThisWorkbook.VBProject.VBComponents
     
     If component.Name = nameModule Then
-      component.Export ThisWorkbook.path & Application.PathSeparator & nameFile
-      MsgBox nameModule & " を " & ThisWorkbook.path & Application.PathSeparator & nameFile & " として保存しました。"
+      component.Export ThisWorkbook.Path & Application.PathSeparator & nameFile
+      MsgBox nameModule & " を " & ThisWorkbook.Path & Application.PathSeparator & nameFile & " として保存しました。"
     End If
     
   Next component
@@ -245,13 +305,13 @@ Private Function absPath(ByVal pathFile As String) As String
         ' Case1-1. 相対指定 "../" 対応
         Case "..":
           'MsgBox "Case1-1: " & pathFile
-          absPath = ThisWorkbook.path & Application.PathSeparator & pathFile
+          absPath = ThisWorkbook.Path & Application.PathSeparator & pathFile
           Exit Function
     
         ' Case1-2. 相対指定 "./" 対応
         Case Else:
           'MsgBox "Case1-2: " & pathFile
-          absPath = ThisWorkbook.path & Mid(pathFile, 2, Len(pathFile) - 1)
+          absPath = ThisWorkbook.Path & Mid(pathFile, 2, Len(pathFile) - 1)
           Exit Function
     
       End Select
@@ -286,7 +346,7 @@ Private Function absPath(ByVal pathFile As String) As String
  
   ' Case3-2. 無指定 "filename"対応
   If Left(pathFile, 1) Like "[0-9]" Or Left(pathFile, 1) Like "[A-z]" Then
-    absPath = ThisWorkbook.path & Application.PathSeparator & pathFile
+    absPath = ThisWorkbook.Path & Application.PathSeparator & pathFile
     Exit Function
   Else
     MsgBox "Error[AbsPath]: fail to get absolute path."
@@ -332,6 +392,7 @@ Private Function list2array(ByVal pathFile As String) As Variant
   Dim countLine As Integer
   countLine = 0
   ReDim Preserve arrayOutput(countLine) ' 配列0で返す場合があるため
+  
   
   Do Until EOF(fp)
     'ライブラリリストを1行ずつ処理
@@ -385,9 +446,43 @@ Private Function list2array(ByVal pathFile As String) As Variant
   '3. リストファイルを閉じる
   Close #fp
   
+  '配列内部参照(デバッグ用)
+  'Dim itm As Variant
+  
+  'For Each itm In arrayOutput()
+  '  MsgBox itm
+  'Next itm
+    
   '4. 戻り値を配列で返す
   list2array = arrayOutput
 End Function
+
+'配列をリストファイルに変換する
+Private Sub array2list(ByVal arrayInput As Variant, ByVal pathFile As String)
+    
+  '1. 現状のリストファイルの削除
+  MsgBox pathFile
+  pathFile = absPath(pathFile)
+  
+  With CreateObject("Scripting.FileSystemObject")
+    .DeleteFile pathFile
+  End With
+    
+  '2. リストファイルを書き込み用で作成、開く
+  Dim fp As Integer
+  fp = FreeFile
+  Open pathFile For Output As #fp
+  
+  '3.配列内の内容をリストファイルに書き込み
+  Dim item As Variant
+  For Each item In arrayInput
+    Print #fp, item
+  Next item
+  
+  '4. リストファイルを閉じる
+  Close #fp
+  
+End Sub
 
 
 
@@ -406,7 +501,6 @@ Private Sub setShortKey()
   
 End Sub
 
-
 'ショートカット設定の削除 (Macでは Macro指定できないっぽい)
 Private Sub clearShortKey()
   If Application.OperatingSystem Like "Windows *" Then
@@ -419,4 +513,5 @@ Private Sub clearShortKey()
   End If
   
 End Sub
+
 
