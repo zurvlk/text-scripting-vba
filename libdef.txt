@@ -1,6 +1,3 @@
-'main
-./main.bas
-
-'modules
+./modMain.bas
 ./modSample.bas
 

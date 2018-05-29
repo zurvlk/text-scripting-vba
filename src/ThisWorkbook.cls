@@ -42,9 +42,8 @@ End Sub
 
 'ワークブック クローズ時に実行
 Private Sub Workbook_BeforeClose(Cancel As Boolean)
-
   If ENABLE_WORKBOOK_CLOSE = True Then
-    Dim check As cdLong
+    Dim check As Long
     check = MsgBox("VBEにおける編集結果を保存しますか?", vbYesNo)
     If check = vbYes Then
         Call saveModule("." & Application.PathSeparator & FILENAME_LIBLIST)
@@ -54,7 +53,16 @@ Private Sub Workbook_BeforeClose(Cancel As Boolean)
   Call clearShortKey
 End Sub
 
+Private Sub Workbook_BeforeSave(ByVal SaveAsUI As Boolean, Cancel As Boolean)
+  Dim check As Long
+  If ENABLE_WORKBOOK_CLOSE = True Then
+    check = MsgBox("VBEにおける編集結果を保存しますか?", vbYesNo)
+    If check = vbYes Then
+      Call saveModule("." & Application.PathSeparator & FILENAME_LIBLIST)
+    End If
+  End If
 
+End Sub
 
 '----------------------------- public Subs/Functions ---------------
 
@@ -466,9 +474,16 @@ Private Sub array2list(ByVal arrayInput As Variant, ByVal pathFile As String)
   '1. 現状のリストファイルの削除
   pathFile = absPath(pathFile)
   
-  With CreateObject("Scripting.FileSystemObject")
-    .DeleteFile pathFile
-  End With
+  Dim isExistList As Boolean
+  isExistList = checkExistFile(pathFile)
+  
+  If isExistList = True Then
+    With CreateObject("Scripting.FileSystemObject")
+        .DeleteFile pathFile
+    End With
+  End If
+  
+
     
   '2. リストファイルを書き込み用で作成、開く
   Dim fp As Integer
@@ -515,5 +530,3 @@ Private Sub clearShortKey()
   End If
   
 End Sub
-
-
