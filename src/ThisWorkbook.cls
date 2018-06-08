@@ -1,8 +1,10 @@
-' Text Scripting on VBA v1.0.1 mod
-' last update: 2018-05-29
+' Text Scripting on VBA v1.0.1 mod 2
+' last update: 2018-06-08
 ' Original: HATANO Hirokazu
 
 ' Postscript: Zhuravlik
+' 保存時のモジュール書き出し機能+ユーザーフォーム関係機能追加
+' OS X動作未検証
 
 ' Detail: http://rsh.csh.sh/text-scripting-vba/
 ' See Also: http://d.hatena.ne.jp/language_and_engineering/20090731/p1
@@ -83,10 +85,14 @@ Public Sub exportThisWorkbook()
     Call exportModule("ThisWorkbook", FILENAME_EXPORT)
 End Sub
 
-Private Sub addRefSetting()
-        Dim myRef As Variant
-
+Public Sub purgeAllModule()
+    Dim result As Boolean
+    result = purgeModules
+    If purgeModules = False Then
+        MsgBox "モジュールの解放においてエラーが発生しました"
+    End If
 End Sub
+
 
 '--------------------------------------------
 Private Sub saveModule(ByVal pathConf As String)
@@ -137,7 +143,7 @@ continue:
     Call array2list(arrayModule, pathConf)
 End Sub
 
-Public Function delModule() As Boolean
+Public Function purgeModules() As Boolean
     '要参照: Microsoft Visual Basic for Application Extensibilly 5.3
     Dim module As VBComponent
     Dim moduleList As VBComponents
@@ -175,9 +181,9 @@ Public Function delModule() As Boolean
     sumOfCnt = cntBAS + cntClass + cntForm
 
     If sumOfCnt = 0 Then
-        delModules = True
+        purgeModules = True
     Else
-        delModules = False
+        purgeModules = False
     End If
 End Function
 
@@ -189,7 +195,8 @@ Private Function loadModule(ByVal pathConf As String) As String
 
     '1. 全モジュールを削除
     Dim isClear As Boolean
-    isClear = clearModules
+    'isClear = clearModules
+    isClear = purgeModules
 
     If isClear = False Then
         loadModule = "Error: 標準モジュールの全削除に失敗しました。"
@@ -307,7 +314,9 @@ Private Function clearModules() As Boolean
 
 End Function
 
-Public Function delModules() As Boolean
+
+
+Private Function clrModules() As Boolean
     '要参照: Microsoft Visual Basic for Application Extensibilly 5.3
     Dim module As VBComponent
     Dim moduleList As VBComponents
@@ -345,13 +354,11 @@ Public Function delModules() As Boolean
     sumOfCnt = cntBAS + cntClass + cntForm
 
     If sumOfCnt = 0 Then
-        delModules = True
+        clrModules = True
     Else
-        delModules = False
+        clrModules = False
     End If
 End Function
-
-
 
 Private Function countBAS() As Long
     Dim count As Long
@@ -597,6 +604,7 @@ Private Sub array2list(ByVal arrayInput As Variant, ByVal pathFile As String)
 
     '3.配列内の内容をリストファイルに書き込み
     Dim item As Variant
+
     For Each item In arrayInput
         Print #fp, item
     Next item
@@ -635,3 +643,4 @@ Private Sub clearShortKey()
     End If
 
 End Sub
+
