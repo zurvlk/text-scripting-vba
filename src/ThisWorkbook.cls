@@ -40,7 +40,6 @@ Private Sub Workbook_Open()
 
     Call setShortKey
     Call reloadModule
-
 End Sub
 
 'ワークブック クローズ時に実行
@@ -138,7 +137,6 @@ Private Sub saveModule(ByVal pathConf As String)
 continue:
     Next
 
-
     '書き出し
     Call array2list(arrayModule, pathConf)
 End Sub
@@ -153,6 +151,7 @@ Public Function purgeModules() As Boolean
     Dim i As Integer: i = 0
 
     With ThisWorkbook.VBProject.VBComponents
+        ' moduleListを見ていって該当モジュールを除去する
         For Each module In moduleList
             '// クラス
             If (module.Type = vbext_ct_ClassModule) Then
@@ -180,6 +179,7 @@ Public Function purgeModules() As Boolean
     Dim sumOfCnt As Long
     sumOfCnt = cntBAS + cntClass + cntForm
 
+    ' モジュール合計数が0ならば正常に終了
     If sumOfCnt = 0 Then
         purgeModules = True
     Else
@@ -286,11 +286,6 @@ Private Function clearModules() As Boolean
             ThisWorkbook.VBProject.VBComponents.Remove component
         End If
 
-        'ユーザフォーム(Type=3)を削除
-        'If component.Type = 3 Then
-        '    ThisWorkbook.VBProject.VBComponents.Remove component
-        'End If
-
     Next component
 
     '標準モジュール/クラスモジュールの合計数が0であればOK
@@ -300,11 +295,8 @@ Private Function clearModules() As Boolean
     Dim cntClass As Long
     cntClass = countClasses()
 
-    Dim cntForm As Long
-    cntForm = countForm()
-
     Dim sumOfCnt As Long
-    sumOfCnt = cntBAS + cntClass ' + cntForm
+    sumOfCnt = cntBAS + cntClass
 
     If sumOfCnt = 0 Then
         clearModules = True
@@ -314,51 +306,6 @@ Private Function clearModules() As Boolean
 
 End Function
 
-
-
-Private Function clrModules() As Boolean
-    '要参照: Microsoft Visual Basic for Application Extensibilly 5.3
-    Dim module As VBComponent
-    Dim moduleList As VBComponents
-    'モジュール一覧取得
-    Set moduleList = ThisWorkbook.VBProject.VBComponents
-
-    Dim i As Integer: i = 0
-
-    With ThisWorkbook.VBProject.VBComponents
-        For Each module In moduleList
-            '// クラス
-            If (module.Type = vbext_ct_ClassModule) Then
-                .Remove module
-            '// フォーム
-            ElseIf (module.Type = vbext_ct_MSForm) Then
-                .Remove module
-            '// 標準モジュール
-            ElseIf (module.Type = vbext_ct_StdModule) Then
-                .Remove module
-            End If
-        Next module
-    End With
-
-    'クラス/フォーム/モジュールの合計数を求める
-    Dim cntBAS As Long
-    cntBAS = countBAS()
-
-    Dim cntClass As Long
-    cntClass = countClasses()
-
-    Dim cntForm As Long
-    cntForm = countForm()
-
-    Dim sumOfCnt As Long
-    sumOfCnt = cntBAS + cntClass + cntForm
-
-    If sumOfCnt = 0 Then
-        clrModules = True
-    Else
-        clrModules = False
-    End If
-End Function
 
 Private Function countBAS() As Long
     Dim count As Long
